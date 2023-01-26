@@ -26,6 +26,13 @@ resource "ibm_is_vpc_address_prefix" "vpc-ap2" {
   cidr = var.zone2_cidr
 }
 
+resource "ibm_is_vpc_address_prefix" "vpc-ap3" {
+  name = "vpc-ap3"
+  zone = var.zone3
+  vpc  = ibm_is_vpc.vpc1.id
+  cidr = var.zone3_cidr
+}
+
 resource "ibm_is_subnet" "subnet1" {
   name            = "subnet1"
   vpc             = ibm_is_vpc.vpc1.id
@@ -44,8 +51,17 @@ resource "ibm_is_subnet" "subnet2" {
   resource_group = data.ibm_resource_group.rg.id
 }
 
-resource "ibm_is_instance" "instance1" {
-  name    = "instance1"
+resource "ibm_is_subnet" "subnet3" {
+  name            = "subnet3"
+  vpc             = ibm_is_vpc.vpc1.id
+  zone            = var.zone3
+  ipv4_cidr_block = var.zone3_cidr
+  depends_on      = [ibm_is_vpc_address_prefix.vpc-ap3]
+  resource_group = data.ibm_resource_group.rg.id
+}
+
+resource "ibm_is_instance" "instance1as" {
+  name    = "instance1as"
   image   = var.image
   profile = var.profile
   primary_network_interface {
@@ -58,8 +74,8 @@ resource "ibm_is_instance" "instance1" {
   resource_group = data.ibm_resource_group.rg.id
 }
 
-resource "ibm_is_instance" "instance2" {
-  name    = "instance2"
+resource "ibm_is_instance" "instance2as" {
+  name    = "instance2as"
   image   = var.image
   profile = var.profile
   primary_network_interface {
@@ -67,6 +83,21 @@ resource "ibm_is_instance" "instance2" {
   }
   vpc  = ibm_is_vpc.vpc1.id
   zone = var.zone2
+  keys = [data.ibm_is_ssh_key.sshkey1.id]
+  user_data = data.template_cloudinit_config.cloud-init-apptier.rendered
+
+  resource_group = data.ibm_resource_group.rg.id
+}
+
+resource "ibm_is_instance" "instance3as" {
+  name    = "instance3as"
+  image   = var.image
+  profile = var.profile
+  primary_network_interface {
+    subnet = ibm_is_subnet.subnet3.id
+  }
+  vpc  = ibm_is_vpc.vpc1.id
+  zone = var.zone3
   keys = [data.ibm_is_ssh_key.sshkey1.id]
   user_data = data.template_cloudinit_config.cloud-init-apptier.rendered
 
